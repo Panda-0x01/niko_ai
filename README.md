@@ -15,7 +15,26 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker)](https://docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-[Live Demo]() · [API Docs](http://localhost:8000/docs) · [Report Bug](https://github.com/Panda-0x01/niko_ai/issues) · [Request Feature](https://github.com/Panda-0x01/niko_ai/issues)
+
+</div>
+
+---
+
+## Screenshots
+
+<div align="center">
+
+### Landing Page
+![Landing Page](docs/screenshots/landing.png)
+
+### Dashboard — Scan
+![Scan Page](docs/screenshots/scan.png)
+
+### Diagnosis Result
+![Diagnosis Result](docs/screenshots/result.png)
+
+### Diagnosis History
+![History Page](docs/screenshots/history.png)
 
 </div>
 
