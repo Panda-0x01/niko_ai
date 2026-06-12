@@ -1,0 +1,106 @@
+# ═══════════════════════════════════════════════════════════════
+#  Niko AI — One-Command Full Stack
+#
+#  START:   docker compose up --build
+#  STOP:    docker compose down
+#  WIPE DB: docker compose down -v
+#
+#  After first build, use:
+#           docker compose up       (no --build, much faster)
+#
+#  URLs:
+#    Frontend  → http://localhost:3000
+#    Backend   → http://localhost:8000
+#    API Docs  → http://localhost:8000/docs
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ── PostgreSQL 16 ─────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: nikoai_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB:       nikoai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:         ["CMD-SHELL", "pg_isready -U postgres -d nikoai"]
+      interval:     5s
+      timeout:      5s
+      retries:      12
+      start_period: 10s
+
+  # ── FastAPI Backend ───────────────────────────────────────────
+  backend:
+    build:
+      context:    ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: nikoai_backend
+    restart: unless-stopped
+    environment:
+      # ── Database ──────────────────────────────────────────────
+      DATABASE_URL: postgresql://postgres:password@db:5432/nikoai
+
+      # ── JWT (change SECRET_KEY in production) ─────────────────
+      SECRET_KEY:                   dev-secret-key-change-in-production-min-32-chars
+      ALGORITHM:                    HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES:  "30"
+      REFRESH_TOKEN_EXPIRE_DAYS:    "7"
+
+      # ── CORS ──────────────────────────────────────────────────
+      ALLOWED_ORIGINS: "http://localhost:3000"
+
+      # ── App ───────────────────────────────────────────────────
+      APP_NAME: "Niko AI"
+      DEBUG:    "true"
+
+      # ── Uploads ───────────────────────────────────────────────
+      UPLOAD_DIR:       /app/uploads
+      MAX_FILE_SIZE_MB: "10"
+
+      # ── HuggingFace — model downloads here, survives restarts ─
+      HF_HOME:          /app/.cache/huggingface
+      MODEL_PATH:       /app/ai-model/weights/best.pt
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
+      - hf_cache:/app/.cache/huggingface
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:         ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval:     15s
+      timeout:      10s
+      retries:      5
+      start_period: 40s
+
+  # ── Next.js Frontend ──────────────────────────────────────────
+  frontend:
+    build:
+      context:    ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+      args:
+        # Browser on your machine talks to localhost:8000
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: nikoai_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# ── Persistent Volumes ────────────────────────────────────────
+volumes:
+  postgres_data:   { driver: local }
+  uploads_data:    { driver: local }
+  hf_cache:        { driver: local }

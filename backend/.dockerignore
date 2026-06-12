@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+.env.*
+uploads/
+ai-model/weights/*.pt
+ai-model/weights/*.onnx
+.pytest_cache/
+.mypy_cache/
+*.log
+.DS_Store
